@@ -33,8 +33,11 @@ export class RecursiveTreeComponent implements OnInit {
   public sourcingOrgReviewer: boolean;
   public nodeStatusMessage: string;
   public telemetryPageId: string;
+  public userId: any;
+  public showActionMenu: any;
   constructor(public userService: UserService, public configService: ConfigService, private programsService: ProgramsService,
-    private helperService: HelperService, public programTelemetryService: ProgramTelemetryService, public resourceService: ResourceService, public router: Router) { }
+    private helperService: HelperService, public programTelemetryService: ProgramTelemetryService,
+    public resourceService: ResourceService, public router: Router) { }
 
   ngOnInit() {
     this.childlevel = this.level + 1;
@@ -61,6 +64,8 @@ export class RecursiveTreeComponent implements OnInit {
     this.telemetryInteractCdata = _.get(this.sessionContext, 'telemetryPageDetails.telemetryInteractCdata') || [];
     // tslint:disable-next-line:max-line-length
     this.telemetryInteractPdata = this.programTelemetryService.getTelemetryInteractPdata(this.userService.appId, this.configService.appConfig.TELEMETRY.PID );
+    this.userId = this.userService.getUserId();
+    this.showActionMenu = this.visibility && this.visibility['showActionMenu'];
   }
 
   hasAccessFor(roles: Array<string>) {
@@ -73,10 +78,10 @@ export class RecursiveTreeComponent implements OnInit {
     // Always return true if sampleContent
     else if(this.sessionContext.sampleContent) return true;
     else {
-      // Always return true if no status selected 
+      // Always return true if no status selected
       return (!selectedStatus.length) || _.includes(selectedStatus, currentStatus)
     }
-         
+
   }
 
   shouldActionMenuBeVisible() {
@@ -88,9 +93,9 @@ export class RecursiveTreeComponent implements OnInit {
     );
   }
 
-  canViewActionMenu(content) {
-    return !!(this.visibility && this.visibility['showActionMenu'] && content.createdBy === this.userService.getUserId());
-  }
+  // canViewActionMenu(content) {
+  //   return !!(this.visibility && this.visibility['showActionMenu'] && content.createdBy === this.userService.getUserId());
+  // }
 
   nodeMetaEmitter(event) {
     this.nodeMeta.emit({
