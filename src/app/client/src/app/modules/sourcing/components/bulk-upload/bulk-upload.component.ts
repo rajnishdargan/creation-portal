@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, Input } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Input, OnDestroy } from '@angular/core';
 import { UserService, ProgramsService, ActionService } from '@sunbird/core';
 import { ResourceService, ToasterService, ConfigService } from '@sunbird/shared';
 import { FineUploader } from 'fine-uploader';
@@ -8,20 +8,22 @@ import { BulkJobService } from '../../services/bulk-job/bulk-job.service';
 import { UUID } from 'angular2-uuid';
 import { HelperService } from '../../services/helper.service';
 import { ProgramTelemetryService } from '../../../program/services';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-bulk-upload',
   templateUrl: './bulk-upload.component.html',
   styleUrls: ['./bulk-upload.component.scss']
 })
-export class BulkUploadComponent implements OnInit {
+export class BulkUploadComponent implements OnInit, OnDestroy {
   @Input('sessionContext') sessionContext: any;
   @Input('sharedContext') sharedContext: any;
   @Input('programContext') programContext: any;
   @Input() storedCollectionData;
   @ViewChild('fineUploaderUI', {static: false}) fineUploaderUI: ElementRef;
 
+  public unsubscribe = new Subject<void>();
+  public processDataSubscription: any;
   public process: any = {
     process_id: '',
     status: '',
@@ -62,7 +64,8 @@ export class BulkUploadComponent implements OnInit {
   public bulkUploadErrorMsgs = [];
   public bulkUploadValidationError = '';
   public levels = [];
-  public sampleMetadataCsvUrl: string = (<HTMLInputElement>document.getElementById('portalCloudStorageUrl')).value.split(',')  + 'bulk-content-upload-format.csv';
+  // public sampleMetadataCsvUrl: string = (<HTMLInputElement>document.getElementById('portalCloudStorageUrl')).value.split(',')  + 'bulk-content-upload-format.csv';
+  public sampleMetadataCsvUrl: string = "";
   public telemetryInteractCdata: any;
   public telemetryInteractPdata: any;
   public telemetryInteractObject: any;
@@ -110,10 +113,10 @@ export class BulkUploadComponent implements OnInit {
                   this.catFormatMapping[_.toLower(catDef.name)].push('html');
                 }
               }
-            }); 
+            });
           }
           return obj;
-        }) 
+        })
         resolve(this.catFormatMapping);
       });
     });
@@ -164,7 +167,7 @@ export class BulkUploadComponent implements OnInit {
       },
       limit: 1
     };
-    this.bulkJobService.getBulkOperationStatus(reqData)
+    this.processDataSubscription = this.bulkJobService.getBulkOperationStatus(reqData)
       .subscribe((statusResponse) => {
         const count = _.get(statusResponse, 'result.count', 0);
         if (!count) {
@@ -206,7 +209,7 @@ export class BulkUploadComponent implements OnInit {
           }
         });
 
-        this.process.overall_stats.upload_pending = this.process.overall_stats.total - 
+        this.process.overall_stats.upload_pending = this.process.overall_stats.total -
         (this.process.overall_stats.upload_success + this.process.overall_stats.upload_failed);
 
         if (this.process.overall_stats.upload_pending === 0) {
@@ -233,8 +236,8 @@ export class BulkUploadComponent implements OnInit {
           if (this.oldProcessStatus !== this.process.status) {
             this.updateJob();
           }
-          
-        }); 
+
+        });
       }
     }, (error) => {
       console.log(error);
@@ -331,7 +334,7 @@ export class BulkUploadComponent implements OnInit {
 
   getMimeType (fileFormat) {
     fileFormat = (fileFormat == 'html') ? 'zip' : fileFormat;
-    return _.findKey(this.mimeTypes, (value) => value === fileFormat); 
+    return _.findKey(this.mimeTypes, (value) => value === fileFormat);
   }
 
   updateJob() {
@@ -765,5 +768,13 @@ export class BulkUploadComponent implements OnInit {
     if (this.bulkUploadState === 2) {
       this.initiateDocumentUploadModal();
     }
+  }
+
+  ngOnDestroy() {
+    if (this.processDataSubscription) {
+      this.processDataSubscription.unsubscribe();
+    }
+    this.unsubscribe.next();
+    this.unsubscribe.complete();
   }
 }

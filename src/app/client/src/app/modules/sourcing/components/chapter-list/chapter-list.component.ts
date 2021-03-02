@@ -6,7 +6,7 @@ import * as _ from 'lodash-es';
 import { UUID } from 'angular2-uuid';
 import { SourcingService } from '../../services';
 import { map, catchError, first, filter } from 'rxjs/operators';
-import { throwError, Observable } from 'rxjs';
+import { throwError, Observable, Subject } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
   IChapterListComponentInput, ISessionContext,
@@ -36,6 +36,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   @Input() chapterListComponentInput: IChapterListComponentInput;
   @Output() selectedQuestionTypeTopic = new EventEmitter<any>();
 
+  public unsubscribe = new Subject<void>();
   public sessionContext: ISessionContext;
   public roles: any;
   public textBookChapters: Array<any> = [];
@@ -102,6 +103,10 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   public telemetryInteractCdata: any;
   public telemetryInteractPdata: any;
   public telemetryInteractObject: any;
+  public nominationPendingOrInitiated = false;
+  public programConfigSubscription: any;
+  public getCollectionSubscription: any;
+  public categoryDefinitionSubscription: any;
   constructor(public publicDataService: PublicDataService, public configService: ConfigService,
     private userService: UserService, public actionService: ActionService,
     public telemetryService: TelemetryService, private sourcingService: SourcingService,
@@ -160,17 +165,17 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
       uploadedContentMeta: (contentMeta) => {
         this.uploadHandler(contentMeta);
       }
-    };   
+    };
     this.sourcingOrgReviewer = this.router.url.includes('/sourcing') ? true : false;
     if (this.programContext['status'] === 'Unlisted') {
       const request = {
         'key': 'mvcLibraryFeature',
         'status': 'active'
       };
-      this.helperService.getProgramConfiguration(request).subscribe(res => {}, err => {});
+      this.programConfigSubscription = this.helperService.getProgramConfiguration(request).subscribe(res => {}, err => {});
     }
 
-    this.statusOptionsList = 
+    this.statusOptionsList =
     [
       {
       "label": "Pending",
@@ -296,16 +301,16 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
       _.forEach(this.localBlueprint.questionTypes, (value, key) => {
         this.localBlueprint.count.total = this.localBlueprint.count.total + value;
         if(key === "LA" || key === "SA" || key === "VSA") {
-          if(key === "LA") this.localBlueprint.count.la = this.localBlueprint.count.la + value;   
-          if(key === "SA") this.localBlueprint.count.sa = this.localBlueprint.count.sa + value;   
-          if(key === "VSA") this.localBlueprint.count.vsa = this.localBlueprint.count.vsa + value;        
+          if(key === "LA") this.localBlueprint.count.la = this.localBlueprint.count.la + value;
+          if(key === "SA") this.localBlueprint.count.sa = this.localBlueprint.count.sa + value;
+          if(key === "VSA") this.localBlueprint.count.vsa = this.localBlueprint.count.vsa + value;
           this.localBlueprint.count.subjective = this.localBlueprint.count.subjective + value;
         }
         else if(key === "MCQ") {
-          this.localBlueprint.count.multipleChoice = this.localBlueprint.count.multipleChoice + value; 
+          this.localBlueprint.count.multipleChoice = this.localBlueprint.count.multipleChoice + value;
         }
         else if(key === "Objective") {
-          this.localBlueprint.count.objective = this.localBlueprint.count.objective + value; 
+          this.localBlueprint.count.objective = this.localBlueprint.count.objective + value;
         }
       })
       _.forEach(this.localBlueprint.learningLevels, (value, key) => {
@@ -313,10 +318,10 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
           this.localBlueprint.count.apply = this.localBlueprint.count.apply + value;
         }
         else if(key === "remember") {
-          this.localBlueprint.count.remember = this.localBlueprint.count.remember + value; 
+          this.localBlueprint.count.remember = this.localBlueprint.count.remember + value;
         }
         else if(key === "understand") {
-          this.localBlueprint.count.understand = this.localBlueprint.count.understand + value; 
+          this.localBlueprint.count.understand = this.localBlueprint.count.understand + value;
         }
       })
       this.localBlueprint.count.topics = this.localBlueprint.topics && this.localBlueprint.topics.length;
@@ -335,23 +340,23 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   fetchBlueprintTemplate(): void {
     this.programsService.getCollectionCategoryDefinition((this.collection && this.collection.primaryCategory)|| 'Question paper', this.currentRootOrgID).subscribe(res => {
       let templateDetails = res.result.objectCategoryDefinition;
-      if(templateDetails && templateDetails.forms) {         
-        this.blueprintTemplate = templateDetails.forms.blueprintCreate;          
+      if(templateDetails && templateDetails.forms) {
+        this.blueprintTemplate = templateDetails.forms.blueprintCreate;
         if(this.blueprintTemplate && this.blueprintTemplate.properties) {
           _.forEach(this.blueprintTemplate.properties, (prop) => {
             prop.editable = false;
           })
         }
-        this.setLocalBlueprint();                    
+        this.setLocalBlueprint();
       }
     })
   }
 
   printPreview(): void {
-    let identifier = this.collectionData.identifier;   
-    this.programsService.generateCollectionPDF(identifier).subscribe((res) => {            
-      if(res.responseCode === 'OK') {              
-        this.pdfData = res.result.base64string;        
+    let identifier = this.collectionData.identifier;
+    this.programsService.generateCollectionPDF(identifier).subscribe((res) => {
+      if(res.responseCode === 'OK') {
+        this.pdfData = res.result.base64string;
         const byteCharacters = atob(this.pdfData);
         let byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -361,8 +366,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
         const file = new Blob([byteArray], { type: 'application/pdf;base64' });
         const fileURL = URL.createObjectURL(file);
         window.open(fileURL);
-      }}, (error) => {          
-        this.toasterService.error(this.resourceService.messages.emsg.failedToPrint)          
+      }}, (error) => {
+        this.toasterService.error(this.resourceService.messages.emsg.failedToPrint)
       });
   }
 
@@ -449,7 +454,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
       param: { 'mode': 'edit' }
     };
      return new Promise((resolve) => {
-    this.actionService.get(req).pipe(catchError(err => {
+      this.getCollectionSubscription = this.actionService.get(req).pipe(catchError(err => {
       const errInfo = {
         errorMsg: 'Fetching TextBook details failed',
         telemetryPageId: this.telemetryPageId,
@@ -582,7 +587,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
       this.getSampleContentStatusCount(data);
     } else {
       this.sampleContent = false;
-      this.sessionContext['sampleContent'] = false;      
+      this.sessionContext['sampleContent'] = false;
       this.getContentStatusCount(data);
     }
     if (!this.checkIfMainCollection(data)) {
@@ -702,8 +707,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
     const self = this;
     if (['admin', 'user'].includes(this.sessionContext.currentOrgRole)  && (this.sessionContext.currentRoles.includes('REVIEWER') || this.sessionContext.currentRoles.includes('CONTRIBUTOR') )) {
       // tslint:disable-next-line:max-line-length
-      if ((this.checkifContent(data) && this.myOrgId === data.organisationId)  && (!data.sampleContent || data.sampleContent === undefined)) {        
-        this.countData['total'] = this.countData['total'] + 1;        
+      if ((this.checkifContent(data) && this.myOrgId === data.organisationId)  && (!data.sampleContent || data.sampleContent === undefined)) {
+        this.countData['total'] = this.countData['total'] + 1;
         if (data.createdBy === this.currentUserID && data.status === 'Review') {
           this.countData['review'] = this.countData['review'] + 1;
         }
@@ -720,9 +725,9 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
           if (data.createdBy !== this.currentUserID && data.status === 'Review') {
             this.countData['awaitingreview'] = this.countData['awaitingreview'] + 1;
           }
-        }     
+        }
       }
-    }   
+    }
      else if(['individual'].includes(this.sessionContext.currentOrgRole)  && this.sessionContext.currentRoles.includes('CONTRIBUTOR')) {
       if ((data.contentType !== 'TextBook' && data.contentType !== 'TextBookUnit' )  && (!data.sampleContent || data.sampleContent === undefined)) {
 
@@ -755,7 +760,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
         }
         if (data.createdBy !== this.currentUserID && data.status === 'Review') {
           this.countData['awaitingreview'] = this.countData['awaitingreview'] + 1;
-        }            
+        }
         if (this.sourcingOrgReviewer && data.status === 'Live' &&
         // tslint:disable-next-line:max-line-length
         !_.includes([...this.storedCollectionData.acceptedContents || [], ...this.storedCollectionData.rejectedContents || []], data.identifier)) {
@@ -769,10 +774,10 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
         }
         if (this.sourcingOrgReviewer && data.status === 'Live' && _.includes([...this.storedCollectionData.acceptedContents || []], data.identifier)) {
           this.countData['sourcing_approved'] = this.countData['sourcing_approved'] + 1;
-          this.countData['sourcing_total'] = this.countData['sourcing_total'] + 1;  
-           // Add blueprint metrics count                
+          this.countData['sourcing_total'] = this.countData['sourcing_total'] + 1;
+           // Add blueprint metrics count
             if(data.questionCategories && data.questionCategories.length) {
-              _.forEach(data.questionCategories, (cat)=> {               
+              _.forEach(data.questionCategories, (cat)=> {
                 if(cat === "MTF" || cat === "FTB" || cat === "MCQ") {
                   this.countData['objective'] = this.countData['objective'] + 1;
                 }
@@ -784,9 +789,9 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
                 }
               })
             }
-            if(data.bloomsLevel && data.bloomsLevel.length) {                                    
-              _.forEach(data.bloomsLevel, (bl)=> {      
-                bl = bl.toLowerCase();        
+            if(data.bloomsLevel && data.bloomsLevel.length) {
+              _.forEach(data.bloomsLevel, (bl)=> {
+                bl = bl.toLowerCase();
                 if(bl === "remember") {
                 this.countData['remember'] = this.countData['remember'] + 1;
                 }
@@ -798,7 +803,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
                 }
               })
             }
-            if(this.localBlueprint) {                
+            if(this.localBlueprint) {
               if(data.topic && data.topic.length) {
                 _.forEach(data.topic, (topic)=> {
                   if(_.includes(this.localUniqueTopicsList, topic)) return;
@@ -806,7 +811,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
                     this.localUniqueTopicsList.push(topic);
                     this.countData['topics'] = this.countData['topics'] + 1;
                     this.topicsInsideBlueprint = this.topicsInsideBlueprint && _.some(this.localBlueprint.topics, {name: topic})
-                  }         
+                  }
                 })
               }
               if(data.learningOutcome && data.learningOutcome.length) {
@@ -816,10 +821,10 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
                     this.localUniqueLearningOutcomesList.push(lo);
                     this.countData['learningOutcomes'] = this.countData['learningOutcomes'] + 1;
                     this.learningOutcomesInsideBlueprint = this.learningOutcomesInsideBlueprint && _.some(this.localBlueprint.learningOutcomes, {name: lo})
-                  }         
+                  }
                 })
               }
-            }           
+            }
         }
         if (this.sourcingOrgReviewer && data.status === 'Live' && _.includes([...this.storedCollectionData.rejectedContents || []], data.identifier)) {
           this.countData['sourcing_rejected'] = this.countData['sourcing_rejected'] + 1;
@@ -1015,8 +1020,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   }
 
   handlePreview(event) {
-    //const templateList = this.programsService.contentCategories;
-    this.programsService.getCategoryDefinition(event.content.primaryCategory, this.programContext.rootorg_id).subscribe((res)=>{
+    // tslint:disable-next-line:max-line-length
+    this.categoryDefinitionSubscription = this.programsService.getCategoryDefinition(event.content.primaryCategory, this.programContext.rootorg_id).subscribe((res)=>{
       this.templateDetails = res.result.objectCategoryDefinition;
       if (this.templateDetails) {
         const appEditorConfig = this.configService.contentCategoryConfig.sourcingConfig.files;
@@ -1246,6 +1251,17 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
 
   ngOnDestroy() {
     this.stageSubscription.unsubscribe();
+    if (this.programConfigSubscription) {
+      this.programConfigSubscription.unsubscribe();
+    }
+    if (this.getCollectionSubscription) {
+      this.getCollectionSubscription.unsubscribe();
+    }
+    if (this.categoryDefinitionSubscription) {
+      this.categoryDefinitionSubscription.unsubscribe();
+    }
+    this.unsubscribe.next();
+    this.unsubscribe.complete();
   }
 
   getTelemetryInteractEdata(id: string, type: string, subtype: string, pageid: string, extra?: string): IInteractEventEdata {

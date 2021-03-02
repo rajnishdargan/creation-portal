@@ -4,7 +4,7 @@ import { ISessionContext, IChapterListComponentInput, IResourceTemplateComponent
 import { ProgramTelemetryService } from '../../../program/services';
 import { ConfigService, ResourceService, ToasterService} from '@sunbird/shared';
 import { UserService, ProgramsService } from '@sunbird/core';
-import { empty } from 'rxjs';
+import { empty, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-resource-template',
@@ -18,7 +18,8 @@ export class ResourceTemplateComponent implements OnInit, OnDestroy {
   @ViewChild('modeofcreationmodal', {static: false}) modeofcreationmodal;
 
   @Input() resourceTemplateComponentInput: IResourceTemplateComponentInput = {};
-  @Output() templateSelection = new EventEmitter<any>();
+  @Output() templateSelection = new EventEmitter();
+  public unsubscribe = new Subject<void>();
   showButton = false;
   public telemetryInteractCdata: any;
   public telemetryInteractPdata: any;
@@ -32,6 +33,7 @@ export class ResourceTemplateComponent implements OnInit, OnDestroy {
   public selectedtemplateDetails;
   public showModeofCreationModal = false;
   public showQuestionTypeModal = false;
+  public categoryDefinitionSubscription: any;
   constructor( public programTelemetryService: ProgramTelemetryService, public userService: UserService,
     public configService: ConfigService, public resourceService: ResourceService,
     private programsService: ProgramsService, private toasterService: ToasterService) { }
@@ -61,29 +63,27 @@ export class ResourceTemplateComponent implements OnInit, OnDestroy {
     }, (err)=> {
 
     })*/
-    this.programsService.getCategoryDefinition(this.templateSelected, this.programContext.rootorg_id).subscribe((res) => {
+    // tslint:disable-next-line:max-line-length
+    this.categoryDefinitionSubscription = this.programsService.getCategoryDefinition(this.templateSelected, this.programContext.rootorg_id).subscribe((res) => {
       this.selectedtemplateDetails = res.result.objectCategoryDefinition;
       const catMetaData = this.selectedtemplateDetails.objectMetadata;
       if (_.isEmpty(_.get(catMetaData, 'schema.properties.mimeType.enum'))) {
           this.toasterService.error(this.resourceService.messages.emsg.m0026);
       } else {
         const supportedMimeTypes = catMetaData.schema.properties.mimeType.enum;
-        //const supportedMimeTypes = ['application/vnd.ekstep.quml-archive', 'application/vnd.ekstep.h5p-archive'];
-
-        let catEditorConfig = !_.isEmpty(_.get(catMetaData, 'config.sourcingConfig.editor')) ? catMetaData.config.sourcingConfig.editor : [];
-        let appEditorConfig = this.configService.contentCategoryConfig.sourcingConfig.editor;
+        // tslint:disable-next-line:max-line-length
+        const catEditorConfig = !_.isEmpty(_.get(catMetaData, 'config.sourcingConfig.editor')) ? catMetaData.config.sourcingConfig.editor : [];
+        const appEditorConfig = this.configService.contentCategoryConfig.sourcingConfig.editor;
 
         const editorTypes = [];
         let tempEditors = _.map(supportedMimeTypes, (mimetype) => {
           const editorObj = _.filter(catEditorConfig, {"mimetype": mimetype});
           if (!_.isEmpty(editorObj)) {
               editorTypes.push(...editorObj);
-              //return editorObj.type;
           } else {
             const editorObj = _.filter(appEditorConfig, {"mimetype": mimetype});
             if (!_.isEmpty(editorObj)) {
               editorTypes.push(...editorObj);
-              //return editorObj.type;
             }
           }
         });
@@ -159,6 +159,9 @@ export class ResourceTemplateComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.categoryDefinitionSubscription) {
+      this.categoryDefinitionSubscription.unsubscribe();
+    }
     if (this.modal && this.modal.deny) {
       this.modal.deny();
     }
@@ -168,6 +171,8 @@ export class ResourceTemplateComponent implements OnInit, OnDestroy {
     if (this.questionTypeModal) {
       this.questionTypeModal.deny();
     }
+    this.unsubscribe.next();
+    this.unsubscribe.complete();
   }
 
 }

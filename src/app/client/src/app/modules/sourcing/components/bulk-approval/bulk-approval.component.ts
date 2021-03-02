@@ -1,6 +1,6 @@
-import { Component, OnInit, Input, Output, EventEmitter, OnChanges } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, OnDestroy } from '@angular/core';
 import { PublicDataService, UserService, ActionService, FrameworkService, ProgramsService } from '@sunbird/core';
-import { ConfigService, ResourceService, ToasterService, NavigationHelperService, BrowserCacheTtlService, 
+import { ConfigService, ResourceService, ToasterService, NavigationHelperService, BrowserCacheTtlService,
   ServerResponse } from '@sunbird/shared';
 import { BulkJobService } from '../../services/bulk-job/bulk-job.service';
 import { HelperService } from '../../services/helper.service';
@@ -9,15 +9,16 @@ import { CacheService } from 'ng2-cache-service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import * as _ from 'lodash-es';
 import { map, tap } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-bulk-approval',
   templateUrl: './bulk-approval.component.html',
   styleUrls: ['./bulk-approval.component.scss']
 })
-export class BulkApprovalComponent implements OnInit, OnChanges {
+export class BulkApprovalComponent implements OnInit, OnChanges, OnDestroy {
 
+  public unsubscribe = new Subject<void>();
   public showBulkApproveModal = false;
   public bulkApprovalComfirmation = false;
   public showBulkApprovalButton = false;
@@ -35,11 +36,14 @@ export class BulkApprovalComponent implements OnInit, OnChanges {
   public telemetryInteractPdata: any;
   public telemetryInteractObject: any;
   public telemetryPageId: string;
+  public processDataSubscription: any;
+  public createBulkJobSubscription: any;
+  public updateBulkJobSubscription: any;
   @Input() programContext;
   @Input() sessionContext;
   @Input() storedCollectionData;
   @Input() originalCollectionData;
-  @Output() updateToc = new EventEmitter<any>();
+  @Output() updateToc = new EventEmitter();
 
   constructor(public resourceService: ResourceService, private bulkJobService: BulkJobService,
     private cacheService: CacheService, private browserCacheTtlService: BrowserCacheTtlService,
@@ -184,7 +188,7 @@ export class BulkApprovalComponent implements OnInit, OnChanges {
       createdby: this.userService.userProfile.userId,
       createdon: new Date()
     };
-    this.bulkJobService.createBulkJob(reqData).subscribe(res => {
+    this.createBulkJobSubscription = this.bulkJobService.createBulkJob(reqData).subscribe(res => {
       this.bulkApprove = reqData;
       this.bulkJobService.setProcess(this.bulkApprove);
       this.showBulkApprovalButton = false;
@@ -201,7 +205,7 @@ export class BulkApprovalComponent implements OnInit, OnChanges {
     }
     const request = _.pick(this.bulkApprove, ['process_id', 'status', 'overall_stats', 'completedon']);
     request['updatedby'] = this.userService.userProfile.userId;
-    this.bulkJobService.updateBulkJob(request).subscribe((res: any) => {
+    this.updateBulkJobSubscription = this.bulkJobService.updateBulkJob(request).subscribe((res: any) => {
       if (this.bulkApprove.status === 'completed') {
         this.showBulkApprovalButton = true;
       }
@@ -342,7 +346,7 @@ export class BulkApprovalComponent implements OnInit, OnChanges {
           collection_id: this.sessionContext.collection
         }
       };
-      this.bulkJobService.getBulkOperationStatus(reqData).subscribe(res => {
+      this.processDataSubscription = this.bulkJobService.getBulkOperationStatus(reqData).subscribe(res => {
         if (res.result && res.result.process && res.result.process.length) {
           this.bulkApprove = this.cacheService.get('bulk_approval_' + this.sessionContext.collection);
         }
@@ -353,5 +357,19 @@ export class BulkApprovalComponent implements OnInit, OnChanges {
         this.toasterService.error(this.resourceService.messages.emsg.bulkApprove.something);
       });
     }
+  }
+
+  ngOnDestroy() {
+    if (this.processDataSubscription) {
+      this.processDataSubscription.unsubscribe();
+    }
+    if (this.createBulkJobSubscription) {
+      this.createBulkJobSubscription.unsubscribe();
+    }
+    if (this.updateBulkJobSubscription) {
+      this.updateBulkJobSubscription.unsubscribe();
+    }
+    this.unsubscribe.next();
+    this.unsubscribe.complete();
   }
 }

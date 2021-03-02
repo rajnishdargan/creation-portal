@@ -23,9 +23,9 @@ export class CkeditorToolComponent implements OnInit, AfterViewInit, OnChanges {
   @Input() editorId: any;
   @Input() setCharacterLimit: any;
   @Input() setImageLimit: any;
-  @Output() editorDataOutput = new EventEmitter<any>();
-  @Output() hasError = new EventEmitter<any>();
-  @Output() videoDataOutput = new EventEmitter<any>();
+  @Output() editorDataOutput = new EventEmitter();
+  @Output() hasError = new EventEmitter();
+  @Output() videoDataOutput = new EventEmitter();
   @Input() videoShow;
   public imageUploadLoader = false;
   public editorInstance: any;

@@ -967,7 +967,7 @@ export class ProgramsService extends DataService implements CanActivate {
         }
       };
       return this.post(req).pipe(tap(data => {
-        this.setSessionCache({name: cacheInd, value: data})
+        this.setSessionCache({name: cacheInd, value: data});
       }));
     }
   }
