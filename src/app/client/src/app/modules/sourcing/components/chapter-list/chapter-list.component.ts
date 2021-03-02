@@ -5,7 +5,7 @@ import { TelemetryService, IInteractEventEdata , IImpressionEventInput} from '@s
 import * as _ from 'lodash-es';
 import { UUID } from 'angular2-uuid';
 import { SourcingService } from '../../services';
-import { map, catchError, first, filter } from 'rxjs/operators';
+import { map, catchError, first, filter, takeUntil } from 'rxjs/operators';
 import { throwError, Observable, Subject } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
@@ -172,7 +172,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
         'key': 'mvcLibraryFeature',
         'status': 'active'
       };
-      this.programConfigSubscription = this.helperService.getProgramConfiguration(request).subscribe(res => {}, err => {});
+      this.helperService.getProgramConfiguration(request).pipe(
+        takeUntil(this.unsubscribe)).subscribe(res => {}, err => {});
     }
 
     this.statusOptionsList =
@@ -253,12 +254,13 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   }
 
   getOriginForApprovedContents (acceptedContents) {
-    this.collectionHierarchyService.getOriginForApprovedContents(acceptedContents).subscribe(
+    this.collectionHierarchyService.getOriginForApprovedContents(acceptedContents).pipe(
+      takeUntil(this.unsubscribe)).subscribe(
       (response) => {
         if (_.get(response, 'result.count') && _.get(response, 'result.count') > 0) {
           this.sessionContext['contentOrigins'] = {};
           _.forEach( _.get(response, 'result.content'), (obj) => {
-            if (obj.status == 'Live') {
+            if (obj.status === 'Live') {
               this.sessionContext['contentOrigins'][obj.origin] = obj;
             }
           });
@@ -338,23 +340,26 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   }
 
   fetchBlueprintTemplate(): void {
-    this.programsService.getCollectionCategoryDefinition((this.collection && this.collection.primaryCategory)|| 'Question paper', this.currentRootOrgID).subscribe(res => {
-      let templateDetails = res.result.objectCategoryDefinition;
-      if(templateDetails && templateDetails.forms) {
+    // tslint:disable-next-line:max-line-length
+    this.programsService.getCollectionCategoryDefinition((this.collection && this.collection.primaryCategory)|| 'Question paper', this.currentRootOrgID).pipe(
+      takeUntil(this.unsubscribe)).subscribe(res => {
+      const templateDetails = res.result.objectCategoryDefinition;
+      if (templateDetails && templateDetails.forms) {
         this.blueprintTemplate = templateDetails.forms.blueprintCreate;
-        if(this.blueprintTemplate && this.blueprintTemplate.properties) {
+        if (this.blueprintTemplate && this.blueprintTemplate.properties) {
           _.forEach(this.blueprintTemplate.properties, (prop) => {
             prop.editable = false;
-          })
+          });
         }
         this.setLocalBlueprint();
       }
-    })
+    });
   }
 
   printPreview(): void {
     let identifier = this.collectionData.identifier;
-    this.programsService.generateCollectionPDF(identifier).subscribe((res) => {
+    this.programsService.generateCollectionPDF(identifier).pipe(
+      takeUntil(this.unsubscribe)).subscribe((res) => {
       if(res.responseCode === 'OK') {
         this.pdfData = res.result.base64string;
         const byteCharacters = atob(this.pdfData);
@@ -516,7 +521,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
         const url =  originUrl + hierarchyUrl1 ;
 
         if (this.router.url.includes('/sourcing') && this.collectionData && this.collectionData.visibility === 'Default') {
-          this.httpClient.get(url).subscribe(async res => {
+          this.httpClient.get(url).pipe(
+            takeUntil(this.unsubscribe)).subscribe(async res => {
             const content = _.get(res, 'result.content');
             this.originalCollectionData = content;
             this.setTreeLeafStatusMessage(identifier, instance);
@@ -1003,10 +1009,12 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
           request: option
         };
         return throwError(this.sourcingService.apiErrorHandling(err, errInfo));
-      }))
+      }), takeUntil(this.unsubscribe))
         .subscribe(result => {
           this.contentId = result.node_id;
-          this.collectionHierarchyService.addResourceToHierarchy(this.sessionContext.collection, this.unitIdentifier, result.identifier)
+          // tslint:disable-next-line:max-line-length
+          this.collectionHierarchyService.addResourceToHierarchy(this.sessionContext.collection, this.unitIdentifier, result.identifier).pipe(
+            takeUntil(this.unsubscribe))
             .subscribe(() => {
                // tslint:disable-next-line:max-line-length
                this.componentLoadHandler('creation', this.programComponentsService.getComponentInstance(event.templateDetails.onClick), event.templateDetails.onClick);
@@ -1021,7 +1029,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
 
   handlePreview(event) {
     // tslint:disable-next-line:max-line-length
-    this.categoryDefinitionSubscription = this.programsService.getCategoryDefinition(event.content.primaryCategory, this.programContext.rootorg_id).subscribe((res)=>{
+    this.categoryDefinitionSubscription = this.programsService.getCategoryDefinition(event.content.primaryCategory, this.programContext.rootorg_id).pipe(
+      takeUntil(this.unsubscribe)).subscribe((res) => {
       this.templateDetails = res.result.objectCategoryDefinition;
       if (this.templateDetails) {
         const appEditorConfig = this.configService.contentCategoryConfig.sourcingConfig.files;
@@ -1096,7 +1105,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
 
   removeMvcContentFromHierarchy() {
     const contentId = this.contentId;
-    this.collectionHierarchyService.removeResourceToHierarchy(this.sessionContext.collection, this.unitIdentifier, this.contentId)
+    this.collectionHierarchyService.removeResourceToHierarchy(this.sessionContext.collection, this.unitIdentifier, this.contentId).pipe(
+      takeUntil(this.unsubscribe))
        .subscribe(() => {
          this.showRemoveConfirmationModal = false;
          this.updateAccordianView(this.unitIdentifier);
@@ -1114,7 +1124,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
        });
   }
   updateTextbookmvcContentCount(textbookId, contentId) {
-     this.helperService.getTextbookDetails(textbookId).subscribe((data) => {
+     this.helperService.getTextbookDetails(textbookId).pipe(
+      takeUntil(this.unsubscribe)).subscribe((data) => {
      const array = _.remove(data.result.content['mvcContributions'], function(content) {return content !== contentId})
       const request = {
         content: {
@@ -1123,7 +1134,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
           'mvcContributions':_.uniq(array),
         }
       };
-      this.helperService.updateContent(request, textbookId).subscribe((data) => {
+      this.helperService.updateContent(request, textbookId).pipe(
+        takeUntil(this.unsubscribe)).subscribe((data) => {
       }, err => {
         const errInfo = {
           telemetryPageId: this.telemetryPageId,
@@ -1140,7 +1152,7 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
         env : this.activeRoute.snapshot.data.telemetry.env,
       };
       this.sourcingService.apiErrorHandling(error, errInfo);
-     })
+     });
   }
 
   resourceTemplateInputData() {
@@ -1214,7 +1226,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   }
 
   removeResourceFromHierarchy() {
-    this.collectionHierarchyService.removeResourceToHierarchy(this.sessionContext.collection, this.unitIdentifier, this.contentId)
+    this.collectionHierarchyService.removeResourceToHierarchy(this.sessionContext.collection, this.unitIdentifier, this.contentId).pipe(
+      takeUntil(this.unsubscribe))
        .subscribe(() => {
          this.showConfirmationModal = false;
          this.updateAccordianView(this.unitIdentifier);
@@ -1224,7 +1237,8 @@ export class ChapterListComponent implements OnInit, OnChanges, OnDestroy, After
   }
 
   deleteContent() {
-    this.helperService.retireContent(this.contentId)
+    this.helperService.retireContent(this.contentId).pipe(
+      takeUntil(this.unsubscribe))
       .subscribe(
         (response) => {
           if (response && response.result && response.result.node_id) {

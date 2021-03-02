@@ -95,7 +95,7 @@
 
       <button class="sb-btn sb-btn-outline-primary sb-btn-xs sb-left-icon-btn sb-btn-radius text-inherit"
         *ngIf="visibility && visibility['showAddresource']"
-        popupText="{{resourceService.frmelmnts.lbl.uploadFileOrCreateNew}}"  suiPopup appTelemetryInteract
+        appTelemetryInteract
         [telemetryInteractEdata]="{id: 'create_new', type: configService.telemetryLabels.eventType.click, subtype: configService.telemetryLabels.eventSubtype.launch, pageid: telemetryPageId }"
         [telemetryInteractObject]="{id: collection.identifier, type: 'Content', ver:  '1.0', rollup:  {l1: sessionContext.collection} }"
         [telemetryInteractCdata]="telemetryInteractCdata"

@@ -9,6 +9,7 @@ import { UUID } from 'angular2-uuid';
 import { HelperService } from '../../services/helper.service';
 import { ProgramTelemetryService } from '../../../program/services';
 import { forkJoin, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-bulk-upload',
@@ -101,7 +102,8 @@ export class BulkUploadComponent implements OnInit, OnDestroy {
         req.push(this.programsService.getCategoryDefinition(contentType, this.programContext.rootorg_id));
       });
 
-      forkJoin(req).subscribe((res)=> {
+      forkJoin(req).pipe(
+        takeUntil(this.unsubscribe)).subscribe((res)=> {
         let mapped_array = _.map(res, (obj) => {
           const catDef = _.get(obj, 'result.objectCategoryDefinition');
           if (!_.isEmpty(_.get(catDef, 'objectMetadata.schema.properties.mimeType.enum'))) {
@@ -123,7 +125,8 @@ export class BulkUploadComponent implements OnInit, OnDestroy {
   }
 
   getLicences() {
-    this.helperService.getLicences().subscribe((res) => {
+    this.helperService.getLicences().pipe(
+      takeUntil(this.unsubscribe)).subscribe((res) => {
       this.licenses = res.license;
     });
   }
@@ -220,7 +223,8 @@ export class BulkUploadComponent implements OnInit, OnDestroy {
           url: `content/v3/hierarchy/${this.sessionContext.collection}`,
           param: { 'mode': 'edit' }
         };
-        this.actionService.get(req).subscribe((response) => {
+        this.actionService.get(req).pipe(
+          takeUntil(this.unsubscribe)).subscribe((response) => {
           const children = [];
           _.forEach(response.result.content.children, (child) => {
             if (child.mimeType !== 'application/vnd.ekstep.content-collection' ||
@@ -344,7 +348,8 @@ export class BulkUploadComponent implements OnInit, OnDestroy {
       status: this.process.status,
       updatedby: _.get(this.userService, 'userProfile.userId')
     };
-    this.bulkJobService.updateBulkJob(reqData)
+    this.bulkJobService.updateBulkJob(reqData).pipe(
+      takeUntil(this.unsubscribe))
       .subscribe((updateResponse) => {
         if (this.process.status === 'completed') {
           this.bulkUploadState = 6;
@@ -719,7 +724,8 @@ export class BulkUploadComponent implements OnInit, OnDestroy {
 
   startBulkUpload(csvData) {
     this.completionPercentage = 0;
-    this.createImportRequest(csvData).subscribe((importResponse) => {
+    this.createImportRequest(csvData).pipe(
+      takeUntil(this.unsubscribe)).subscribe((importResponse) => {
       this.process.process_id = _.get(importResponse, 'result.processId');
       this.createJobRequest(csvData.length)
         .subscribe((jobResponse) => {

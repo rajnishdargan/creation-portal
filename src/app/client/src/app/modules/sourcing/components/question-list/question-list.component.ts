@@ -240,7 +240,7 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   fetchCategoryDetails() {
     this.helperService.categoryMetaData$.pipe(take(1), takeUntil(this.onComponentDestroy$)).subscribe(data => {
-      this.fetchFormconfiguration();         
+      this.fetchFormconfiguration();
       this.handleActionButtons();
     });
     this.helperService.getCategoryMetaData(this.resourceDetails.primaryCategory, _.get(this.programContext, 'rootorg_id'));
@@ -270,7 +270,7 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
         env : this.activeRoute.snapshot.data.telemetry.env, request: option
        };
       return throwError(this.sourcingService.apiErrorHandling(err, errInfo));
-    })).subscribe(res => {
+    }), takeUntil(this.onComponentDestroy$)).subscribe(res => {
       this.resourceDetails = res;
       /*const contentTypeValue = [this.resourceDetails.contentType];
       const contentType = this.resourceDetails.contentType;
@@ -400,7 +400,7 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     // tslint:disable-next-line:max-line-length
     [this.categoryMasterList, this.formFieldProperties] = this.helperService.initializeMetadataForm(this.sessionContext, this.formFieldProperties, this.resourceDetails);
-    if(this.formFieldProperties["bloomsLevel"] && !this.categoryMasterList["bloomsLevel"]) {      
+    if(this.formFieldProperties["bloomsLevel"] && !this.categoryMasterList["bloomsLevel"]) {
       this.categoryMasterList["bloomsLevel"] = this.formFieldProperties["bloomsLevel"].range;
     }
     this.showEditMetaForm = true;
@@ -518,9 +518,9 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   questionLimitReached() {
-    let limit = _.get(this.sessionContext, 'contentMetadata.maxQuestions', undefined);        
-    if(limit) return (limit === 1 ? true : this.questionList.length >= limit); 
-    return false;    
+    let limit = _.get(this.sessionContext, 'contentMetadata.maxQuestions', undefined);
+    if(limit) return (limit === 1 ? true : this.questionList.length >= limit);
+    return false;
   }
 
   canCreateQuestion() {
@@ -642,7 +642,7 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
     }))
     .subscribe((questionList) => {
           this.selectedQuestionId = questionList[0].identifier;
-          this.handleQuestionTabChange(this.selectedQuestionId);          
+          this.handleQuestionTabChange(this.selectedQuestionId);
           this.handleActionButtons();
     });
   }
@@ -731,7 +731,7 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
     }),
     mergeMap(requestParams => this.updateItemset(requestParams, this.itemSetIdentifier)))
     .subscribe((contentRes: any) => {
-      this.handleQuestionTabChange(this.selectedQuestionId);      
+      this.handleQuestionTabChange(this.selectedQuestionId);
       this.handleActionButtons();
       this.goToNextQuestionStatus = false;
     });
@@ -1132,7 +1132,7 @@ export class QuestionListComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!_.isEmpty(data['medium'])) {
       data['medium'] = data['medium'][0];
     }
-  
+
     return data;
   }
 

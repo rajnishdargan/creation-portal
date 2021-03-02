@@ -2,8 +2,8 @@ import { Component, OnInit, Input, Output, EventEmitter, OnDestroy, AfterViewIni
 import { ConfigService, UtilService, ResourceService, NavigationHelperService, ToasterService } from '@sunbird/shared';
 import { PublicDataService, ContentService, UserService, ProgramsService, LearnerService, ActionService  } from '@sunbird/core';
 import * as _ from 'lodash-es';
-import { catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
+import { Subject, throwError } from 'rxjs';
 import { TelemetryService, IInteractEventEdata , IImpressionEventInput} from '@sunbird/telemetry';
 import { SourcingService, CollectionHierarchyService} from '../../services';
 import { ProgramStageService, ProgramTelemetryService } from '../../../program/services';
@@ -21,6 +21,7 @@ export class CollectionComponent implements OnInit, OnDestroy, AfterViewInit {
 
   @Input() collectionComponentInput: any;
   @Output() isCollectionSelected  = new EventEmitter<any>();
+  public unsubscribe = new Subject<void>();
   public sessionContext: ISessionContext = {};
   public chapterListComponentInput: IChapterListComponentInput = {};
   public programContext: any;
@@ -196,7 +197,8 @@ export class CollectionComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getCollectionCard() {
-    this.searchCollection().subscribe((res) => {
+    this.searchCollection().pipe(
+      takeUntil(this.unsubscribe)).subscribe((res) => {
       const { constantData, metaData, dynamicFields } = this.configService.appConfig.LibrarySearch;
       const filterArr = _.groupBy(res.result.content, 'identifier');
       const filteredTextbook = this.filterTextBook(filterArr);
@@ -389,6 +391,8 @@ export class CollectionComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy() {
     this.stageSubscription.unsubscribe();
+    this.unsubscribe.next();
+    this.unsubscribe.complete();
   }
 
   ChangeUploadStatus(rowId) {
@@ -473,7 +477,8 @@ export class CollectionComponent implements OnInit, OnDestroy, AfterViewInit {
       collection_ids: this.selectedCollectionIds,
     };
 
-    this.programsService.addorUpdateNomination(request).subscribe(
+    this.programsService.addorUpdateNomination(request).pipe(
+      takeUntil(this.unsubscribe)).subscribe(
       (data) => {
         if (data === 'Approved' || data === 'Rejected') {
           this.showNominateModal = false;
@@ -534,7 +539,8 @@ export class CollectionComponent implements OnInit, OnDestroy, AfterViewInit {
     } else {
       req.data.request.filters['user_id'] = this.userService.getUserId();
     }
-    this.programsService.post(req).subscribe((data) => {
+    this.programsService.post(req).pipe(
+      takeUntil(this.unsubscribe)).subscribe((data) => {
       const nomination = _.first(_.get(data, 'result', []));
       this.afterNominationCheck(nomination);
     }, error => {
@@ -595,7 +601,8 @@ export class CollectionComponent implements OnInit, OnDestroy, AfterViewInit {
         content_types: this.selectedContentTypes
       };
 
-      this.programsService.addorUpdateNomination(request).subscribe(
+      this.programsService.addorUpdateNomination(request).pipe(
+        takeUntil(this.unsubscribe)).subscribe(
         (data) => {
           if (data.result && !_.isEmpty(data.result)) {
             this.sessionContext.nominationDetails = {

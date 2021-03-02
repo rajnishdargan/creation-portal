@@ -8,7 +8,7 @@ import { ProgramTelemetryService } from '../../../program/services';
 import { CacheService } from 'ng2-cache-service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import * as _ from 'lodash-es';
-import { map, tap } from 'rxjs/operators';
+import { map, takeUntil, tap } from 'rxjs/operators';
 import { Observable, Subject } from 'rxjs';
 
 @Component({
@@ -157,7 +157,8 @@ export class BulkApprovalComponent implements OnInit, OnChanges, OnDestroy {
           ]
         }
       };
-      this.httpClient.post('learner/content/v1/import', data).subscribe((res: any) => {
+      this.httpClient.post('learner/content/v1/import', data).pipe(
+        takeUntil(this.unsubscribe)).subscribe((res: any) => {
         if (res && res.result && res.result.processId) {
           this.processId = res.result.processId;
           this.createBulkApprovalJob();
@@ -221,7 +222,7 @@ export class BulkApprovalComponent implements OnInit, OnChanges, OnDestroy {
       url: 'content/v3/read/' + this.sessionContext.collection,
       param: { 'mode': 'edit', 'fields': 'acceptedContents,versionKey' }
     };
-    this.actionService.get(option).pipe(map((res: any) => res.result.content)).subscribe((data) => {
+    this.actionService.get(option).pipe(map((res: any) => res.result.content), takeUntil(this.unsubscribe)).subscribe((data) => {
       const request = {
         content: {
           'versionKey': data.versionKey
@@ -230,7 +231,8 @@ export class BulkApprovalComponent implements OnInit, OnChanges, OnDestroy {
       // tslint:disable-next-line:max-line-length
       request.content['acceptedContents'] = _.compact(_.uniq([...this.storedCollectionData.acceptedContents || [],
                                             ..._.map(_.filter(this.approvalPending, content => content.originUnitId), 'identifier')]));
-      this.helperService.updateContent(request, this.sessionContext.collection).subscribe(res => {
+      this.helperService.updateContent(request, this.sessionContext.collection).pipe(
+        takeUntil(this.unsubscribe)).subscribe(res => {
         this.updateToc.emit('bulkApproval_completed');
         this.showBulkApprovalButton = false;
       }, err => {
@@ -241,7 +243,8 @@ export class BulkApprovalComponent implements OnInit, OnChanges, OnDestroy {
 
   viewBulkApprovalStatus() {
     if (this.bulkApprove && this.bulkApprove.status === 'processing') {
-      this.bulkJobService.searchContentWithProcessId(this.bulkApprove.process_id, this.bulkApprove.type).subscribe((res: any) => {
+      this.bulkJobService.searchContentWithProcessId(this.bulkApprove.process_id, this.bulkApprove.type).pipe(
+        takeUntil(this.unsubscribe)).subscribe((res: any) => {
         if (res.result && res.result.content && res.result.content.length) {
           const overallStats = this.bulkApprove && this.bulkApprove.overall_stats;
           this.dikshaContents = _.get(res, 'result.content');
@@ -321,7 +324,8 @@ export class BulkApprovalComponent implements OnInit, OnChanges, OnDestroy {
 
   downloadFailedContentReport() {
     if (!this.dikshaContents) {
-      this.bulkJobService.searchContentWithProcessId(this.bulkApprove.process_id, this.bulkApprove.type).subscribe((res: any) => {
+      this.bulkJobService.searchContentWithProcessId(this.bulkApprove.process_id, this.bulkApprove.type).pipe(
+        takeUntil(this.unsubscribe)).subscribe((res: any) => {
         if (res.result && res.result.content && res.result.content.length) {
           this.dikshaContents = _.get(res, 'result.content');
           this.prepareTableData();
