@@ -73,10 +73,9 @@ module.exports = function (app) {
         proxy(contentProxyUrl, {
         proxyReqOptDecorator: proxyHeaders.decorateRequestHeaders(),
         proxyReqPathResolver: function (req) {
-            CONS
-            let urlParam = req.originalUrl;
+            let urlParam = req.originalUrl.replace('/api/', '')
             let query = require('url').parse(req.url).query
-            console.log(require('url').parse(contentProxyUrl + urlParam).path);
+            console.log('/api/questionset  ', require('url').parse(contentProxyUrl + urlParam).path);
             if (query) {
               return require('url').parse(contentProxyUrl + urlParam + '?' + query).path
             } else {
