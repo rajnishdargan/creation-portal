@@ -1,11 +1,10 @@
 
 import {throwError as observableThrowError, of as observableOf,  Observable } from 'rxjs';
-import { DeleteComponent } from './../../../announcement/components/delete/delete.component';
 // Import NG testing module(s)
 import { async, ComponentFixture, TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { SuiModalService, TemplateModalConfig, ModalTemplate } from 'ng2-semantic-ui';
+import { SuiModalService, TemplateModalConfig, ModalTemplate } from 'ng2-semantic-ui-v9';
 // Import services
 import { DraftComponent } from './draft.component';
 import { SharedModule, PaginationService, ToasterService, ResourceService, ConfigService } from '@sunbird/shared';
@@ -18,6 +17,8 @@ import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import * as mockData from './draft.component.spec.data';
 import { TelemetryModule } from '@sunbird/telemetry';
 import { NgInviewModule } from 'angular-inport';
+import {APP_BASE_HREF} from '@angular/common';
+
 const testData = mockData.mockRes;
 describe('DraftComponent', () => {
   let component: DraftComponent;
@@ -68,7 +69,8 @@ describe('DraftComponent', () => {
         PermissionService, ResourceService, ToasterService, SuiModalService,
         { provide: ResourceService, useValue: resourceBundle },
         { provide: Router, useClass: RouterStub },
-        { provide: ActivatedRoute, useValue: fakeActivatedRoute }
+        { provide: ActivatedRoute, useValue: fakeActivatedRoute },
+        {provide: APP_BASE_HREF, useValue: '/'}
       ]
     })
       .compileComponents();
@@ -204,7 +206,7 @@ describe('DraftComponent', () => {
       spyOn(component, 'fetchDrafts').and.callThrough();
       spyOn(component, 'delete').and.callFake(() => observableOf({}));
       spyOn(modalService, 'open').and.callFake(() => observableOf({}));
-      spyOn(modalService, 'approve').and.callFake(() => observableOf({}));
+      // spyOn(modalService, 'approve').and.callFake(() => observableOf({}));
       component.draftList = testData.localSingleContentData;
       component.deleteConfirmModal('do_112523105235623936168');
       expect(component.fetchDrafts).toHaveBeenCalled();

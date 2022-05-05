@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { CollectionTreeComponent } from './collection-tree.component';
-import { SuiAccordionModule } from 'ng2-semantic-ui';
+import { SuiAccordionModule } from 'ng2-semantic-ui-v9';
 import { FancyTreeComponent } from '..';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { HttpClientModule } from '@angular/common/http';
@@ -10,9 +10,10 @@ import { nodes, commonMessageApiResp } from './collection-tree.component.spec.da
 import { ResourceService, BrowserCacheTtlService, ConfigService, ToasterService } from '@sunbird/shared';
 import { UserService, OrgDetailsService } from '@sunbird/core';
 import { ActivatedRoute, Router } from '@angular/router';
-
-
 import { CacheService } from 'ng2-cache-service';
+import { RouterTestingModule } from '@angular/router/testing';
+import {APP_BASE_HREF} from '@angular/common';
+
 describe('CollectionTreeComponent', () => {
   let component: CollectionTreeComponent;
   let fixture: ComponentFixture<CollectionTreeComponent>;
@@ -26,12 +27,22 @@ describe('CollectionTreeComponent', () => {
   class RouterStub {
     navigate = jasmine.createSpy('navigate');
   }
+  const fakeActivatedRoute = {
+    snapshot: {
+      queryParams: {
+        dialCode: 'D4R4K4'
+      }
+    }
+  };
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [SuiAccordionModule, HttpClientTestingModule, HttpClientModule],
+      imports: [RouterTestingModule, SuiAccordionModule, HttpClientTestingModule, HttpClientModule],
       declarations: [CollectionTreeComponent, FancyTreeComponent],
-      providers: [ ResourceService, ToasterService,  { provide: ResourceService, useValue: resourceBundle },
-        { provide: Router, useClass: RouterStub }, CacheService, ConfigService, BrowserCacheTtlService]
+      providers: [ResourceService, ToasterService,  { provide: ResourceService, useValue: resourceBundle },
+        { provide: Router, useClass: RouterStub }, CacheService, ConfigService, BrowserCacheTtlService,
+        { provide: ActivatedRoute, useValue: fakeActivatedRoute },
+        { provide: APP_BASE_HREF, useValue: '/' }
+      ]
     }).compileComponents();
   }));
 

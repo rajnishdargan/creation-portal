@@ -11,6 +11,7 @@ import { mockRes } from './content-editor.component.spec.data';
 import { Router, ActivatedRoute } from '@angular/router';
 import { WorkSpaceService } from '../../../services';
 import { TelemetryModule } from '@sunbird/telemetry';
+import { RouterTestingModule } from '@angular/router/testing';
 
 const mockResourceService = { messages: { emsg: { m0004: '1000' } } };
 const mockActivatedRoute = {
@@ -23,6 +24,9 @@ const mockActivatedRoute = {
 class RouterStub {
   navigate = jasmine.createSpy('navigate');
 }
+class NavigationHelperServiceStub {
+  public navigateToWorkSpace() {}
+}
 const mockUserService = { userProfile: { userId: '68777b59-b28b-4aee-88d6-50d46e4c35090'} };
 describe('ContentEditorComponent', () => {
   let component: ContentEditorComponent;
@@ -30,11 +34,12 @@ describe('ContentEditorComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [ContentEditorComponent],
-      imports: [HttpClientTestingModule, CoreModule, TelemetryModule.forRoot()],
+      imports: [HttpClientTestingModule,RouterTestingModule, CoreModule, TelemetryModule.forRoot()],
       providers: [
         EditorService, UserService, ContentService, BrowserCacheTtlService,
         ResourceService, ToasterService, ConfigService, LearnerService,
-        NavigationHelperService, WorkSpaceService,
+        WorkSpaceService,
+        {provide: NavigationHelperService, useClass: NavigationHelperServiceStub},
         { provide: Router, useClass: RouterStub },
         { provide: ResourceService, useValue: mockResourceService },
         { provide: UserService, useValue: mockUserService },

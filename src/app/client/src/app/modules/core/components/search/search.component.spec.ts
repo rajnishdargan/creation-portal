@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { ResourceService, ConfigService, BrowserCacheTtlService, SharedModule } from '@sunbird/shared';
-import { SuiModule } from 'ng2-semantic-ui';
+import { SuiModule } from 'ng2-semantic-ui-v9';
 import { async, ComponentFixture, TestBed, fakeAsync, tick, inject} from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +11,7 @@ import { Location } from '@angular/common';
 import { ActivatedRoute, Router, Params, UrlSegment, NavigationEnd} from '@angular/router';
 import { UserService, LearnerService, ContentService } from '@sunbird/core';
 import { mockResponse } from './search.component.spec.data';
+import { APP_BASE_HREF,DatePipe } from '@angular/common'; 
 
 import { CacheService } from 'ng2-cache-service';
 describe('SearchComponent', () => {
@@ -41,7 +42,8 @@ describe('SearchComponent', () => {
          { provide: ActivatedRoute, useValue: {queryParams: {
           subscribe: (fn: (value: Params) => void) => fn({
             subjects : ['english']
-          })}  }}, Location],
+          })}  }}, Location,
+          {provide: APP_BASE_HREF, useValue: '/'}],
       schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();

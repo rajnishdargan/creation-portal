@@ -5,12 +5,13 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { PublicBatchDetailsComponent } from './public-batch-details.component';
 import { SharedModule, ResourceService } from '@sunbird/shared';
 import { CoreModule, PermissionService } from '@sunbird/core';
-import { SuiModule } from 'ng2-semantic-ui';
+import { SuiModule } from 'ng2-semantic-ui-v9';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { allBatchDetails } from './public-batch-details.component.data';
 import { UserService } from '@sunbird/core';
 import { CourseBatchService } from '@sunbird/learn';
+import { RouterTestingModule } from '@angular/router/testing';
 
 class RouterStub {
   navigate = jasmine.createSpy('navigate');
@@ -40,7 +41,7 @@ describe('PublicBatchDetailsComponent', () => {
   let fixture: ComponentFixture<PublicBatchDetailsComponent>;
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, SharedModule.forRoot(), CoreModule, SuiModule],
+      imports: [RouterTestingModule, HttpClientTestingModule, SharedModule.forRoot(), CoreModule, SuiModule],
       declarations: [PublicBatchDetailsComponent],
       providers: [CourseBatchService, UserService, { provide: Router, useClass: RouterStub },
         { provide: ActivatedRoute, useValue: fakeActivatedRoute }],

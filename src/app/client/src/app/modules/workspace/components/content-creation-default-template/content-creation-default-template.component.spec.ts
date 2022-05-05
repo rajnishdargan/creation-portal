@@ -4,7 +4,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SuiModule } from 'ng2-semantic-ui';
+import { SuiModule } from 'ng2-semantic-ui-v9';
 import { EditorService, WorkSpaceService } from './../../services';
 import { ResourceService, SharedModule } from '@sunbird/shared';
 import { UserService, LearnerService, CoreModule } from '@sunbird/core';
@@ -12,6 +12,7 @@ import { CacheService } from 'ng2-cache-service';
 import { DefaultTemplateComponent } from './content-creation-default-template.component';
 import { mockData } from './content-creation-default-template.component.spec.data';
 import { expand } from 'rxjs/operators';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('DefaultTemplateComponent', () => {
   let component: DefaultTemplateComponent;
@@ -37,7 +38,7 @@ describe('DefaultTemplateComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, SuiModule, SharedModule.forRoot(), CoreModule],
+      imports: [HttpClientTestingModule, SuiModule,RouterTestingModule, SharedModule.forRoot(), CoreModule],
       declarations: [ DefaultTemplateComponent ],
       providers: [UserService, LearnerService,
         CacheService, EditorService, WorkSpaceService,

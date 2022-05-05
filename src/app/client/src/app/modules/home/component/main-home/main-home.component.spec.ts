@@ -1,9 +1,9 @@
 import { async, ComponentFixture, TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Observable, of } from 'rxjs';
-import { SuiModule } from 'ng2-semantic-ui';
+import { SuiModule } from 'ng2-semantic-ui-v9';
 import { SlickModule } from 'ngx-slick';
-import { AnnouncementService, UserService, CoursesService, LearnerService, FrameworkService, ContentService,
+import { UserService, CoursesService, LearnerService, FrameworkService, ContentService,
   PlayerService } from '@sunbird/core';
 import { SharedModule, ResourceService, ConfigService, ToasterService } from '@sunbird/shared';
 import { MainHomeComponent } from './main-home.component';
@@ -13,6 +13,9 @@ import { CacheService } from 'ng2-cache-service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgInviewModule } from 'angular-inport';
 import { TelemetryModule } from '@sunbird/telemetry';
+import { RouterTestingModule } from '@angular/router/testing';
+import { APP_BASE_HREF,DatePipe } from '@angular/common'; 
+
 const testData = mockData.mockRes;
 describe('MainHomeComponent', () => {
   let component: MainHomeComponent;
@@ -53,13 +56,14 @@ class ActivatedRouteStub {
   };
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, SuiModule, SlickModule, SharedModule.forRoot(), NgInviewModule, TelemetryModule.forRoot()],
+      imports: [HttpClientTestingModule, SuiModule,RouterTestingModule, SlickModule, SharedModule.forRoot(), NgInviewModule, TelemetryModule.forRoot()],
       declarations: [MainHomeComponent],
-      providers: [UserService, CoursesService, ResourceService, LearnerService, AnnouncementService,
+      providers: [UserService, CoursesService, ResourceService, LearnerService,
          ToasterService, FrameworkService, CacheService, ContentService, PlayerService,
          { provide: Router, useClass: RouterStub },
          { provide: ActivatedRoute, useClass: ActivatedRouteStub },
-         { provide: ResourceService, useValue: resourceBundle }
+         { provide: ResourceService, useValue: resourceBundle },
+         {provide: APP_BASE_HREF, useValue: '/'}
       ],
       schemas: [NO_ERRORS_SCHEMA]
     })

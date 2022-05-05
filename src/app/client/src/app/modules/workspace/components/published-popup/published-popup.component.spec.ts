@@ -7,7 +7,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SuiModule } from 'ng2-semantic-ui';
+import { SuiModule } from 'ng2-semantic-ui-v9';
 import { ContentService, CoreModule } from '@sunbird/core';
 import { SharedModule, ResourceService, ConfigService, ToasterService, NavigationHelperService } from '@sunbird/shared';
 import { PublishedPopupComponent } from './published-popup.component';
@@ -69,7 +69,7 @@ describe('PublishedPopupComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, SuiModule, SharedModule.forRoot(), CoreModule],
+      imports: [HttpClientTestingModule, SuiModule,RouterTestingModule, SharedModule.forRoot(), CoreModule],
       declarations: [PublishedPopupComponent],
       providers: [ToasterService, NavigationHelperService, WorkSpaceService, ReviewCommentsService,
         { provide: Router, useClass: RouterStub },
